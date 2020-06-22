@@ -1,0 +1,188 @@
+library(stringr)
+library(data.table)
+library(dplyr)
+
+setwd("C:/Users/DimakiM/Desktop/10_Capstone")
+
+load(file="all_ALL_5_grams.RData")
+
+all_ALL_5_grams.dt1.1 <- all_ALL_5_grams.dt[1:(nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.1, file = "all_ALL_5_grams.dt1.1.RData")
+rm(all_ALL_5_grams.dt1.1)
+all_ALL_5_grams.dt1.2 <- all_ALL_5_grams.dt[((1*nrow(all_ALL_5_grams.dt)%/%60)+1):(2*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.2, file = "all_ALL_5_grams.dt1.2.RData")
+rm(all_ALL_5_grams.dt1.2)
+all_ALL_5_grams.dt1.3 <- all_ALL_5_grams.dt[((2*nrow(all_ALL_5_grams.dt)%/%60)+1):(3*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.3, file = "all_ALL_5_grams.dt1.3.RData")
+rm(all_ALL_5_grams.dt1.3)
+all_ALL_5_grams.dt1.4 <- all_ALL_5_grams.dt[((3*nrow(all_ALL_5_grams.dt)%/%60)+1):(4*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.4, file = "all_ALL_5_grams.dt1.4.RData")
+rm(all_ALL_5_grams.dt1.4)
+all_ALL_5_grams.dt1.5 <- all_ALL_5_grams.dt[((4*nrow(all_ALL_5_grams.dt)%/%60)+1):(5*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.5, file = "all_ALL_5_grams.dt1.5.RData")
+rm(all_ALL_5_grams.dt1.5)
+all_ALL_5_grams.dt1.6 <- all_ALL_5_grams.dt[((5*nrow(all_ALL_5_grams.dt)%/%60)+1):(6*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.6, file = "all_ALL_5_grams.dt1.6.RData")
+rm(all_ALL_5_grams.dt1.6)
+all_ALL_5_grams.dt1.7 <- all_ALL_5_grams.dt[((6*nrow(all_ALL_5_grams.dt)%/%60)+1):(7*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.7, file = "all_ALL_5_grams.dt1.7.RData")
+rm(all_ALL_5_grams.dt1.7)
+all_ALL_5_grams.dt1.8 <- all_ALL_5_grams.dt[((7*nrow(all_ALL_5_grams.dt)%/%60)+1):(8*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.8, file = "all_ALL_5_grams.dt1.8.RData")
+rm(all_ALL_5_grams.dt1.8)
+all_ALL_5_grams.dt1.9 <- all_ALL_5_grams.dt[((8*nrow(all_ALL_5_grams.dt)%/%60)+1):(9*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.9, file = "all_ALL_5_grams.dt1.9.RData")
+rm(all_ALL_5_grams.dt1.9)
+all_ALL_5_grams.dt1.10 <- all_ALL_5_grams.dt[((9*nrow(all_ALL_5_grams.dt)%/%60)+1):(10*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.10, file = "all_ALL_5_grams.dt1.10.RData")
+rm(all_ALL_5_grams.dt1.10)
+all_ALL_5_grams.dt1.11 <- all_ALL_5_grams.dt[((10*nrow(all_ALL_5_grams.dt)%/%60)+1):(11*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.11, file = "all_ALL_5_grams.dt1.11.RData")
+rm(all_ALL_5_grams.dt1.11)
+all_ALL_5_grams.dt1.12 <- all_ALL_5_grams.dt[((11*nrow(all_ALL_5_grams.dt)%/%60)+1):(12*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.12, file = "all_ALL_5_grams.dt1.12.RData")
+rm(all_ALL_5_grams.dt1.12)
+all_ALL_5_grams.dt1.13 <- all_ALL_5_grams.dt[((12*nrow(all_ALL_5_grams.dt)%/%60)+1):(13*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.13, file = "all_ALL_5_grams.dt1.13.RData")
+rm(all_ALL_5_grams.dt1.13)
+all_ALL_5_grams.dt1.14 <- all_ALL_5_grams.dt[((13*nrow(all_ALL_5_grams.dt)%/%60)+1):(14*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.14, file = "all_ALL_5_grams.dt1.14.RData")
+rm(all_ALL_5_grams.dt1.14)
+all_ALL_5_grams.dt1.15 <- all_ALL_5_grams.dt[((14*nrow(all_ALL_5_grams.dt)%/%60)+1):(15*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.15, file = "all_ALL_5_grams.dt1.15.RData")
+rm(all_ALL_5_grams.dt1.15)
+all_ALL_5_grams.dt1.16 <- all_ALL_5_grams.dt[((15*nrow(all_ALL_5_grams.dt)%/%60)+1):(16*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.16, file = "all_ALL_5_grams.dt1.16.RData")
+rm(all_ALL_5_grams.dt1.16)
+all_ALL_5_grams.dt1.17 <- all_ALL_5_grams.dt[((16*nrow(all_ALL_5_grams.dt)%/%60)+1):(17*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.17, file = "all_ALL_5_grams.dt1.17.RData")
+rm(all_ALL_5_grams.dt1.17)
+all_ALL_5_grams.dt1.18 <- all_ALL_5_grams.dt[((17*nrow(all_ALL_5_grams.dt)%/%60)+1):(18*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.18, file = "all_ALL_5_grams.dt1.18.RData")
+rm(all_ALL_5_grams.dt1.18)
+all_ALL_5_grams.dt1.19 <- all_ALL_5_grams.dt[((18*nrow(all_ALL_5_grams.dt)%/%60)+1):(19*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.19, file = "all_ALL_5_grams.dt1.19.RData")
+rm(all_ALL_5_grams.dt1.19)
+all_ALL_5_grams.dt1.20 <- all_ALL_5_grams.dt[((19*nrow(all_ALL_5_grams.dt)%/%60)+1):(20*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.20, file = "all_ALL_5_grams.dt1.20.RData")
+rm(all_ALL_5_grams.dt1.20)
+all_ALL_5_grams.dt1.21 <- all_ALL_5_grams.dt[((20*nrow(all_ALL_5_grams.dt)%/%60)+1):(21*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.21, file = "all_ALL_5_grams.dt1.21.RData")
+rm(all_ALL_5_grams.dt1.21)
+all_ALL_5_grams.dt1.22 <- all_ALL_5_grams.dt[((21*nrow(all_ALL_5_grams.dt)%/%60)+1):(22*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.22, file = "all_ALL_5_grams.dt1.22.RData")
+rm(all_ALL_5_grams.dt1.22)
+all_ALL_5_grams.dt1.23 <- all_ALL_5_grams.dt[((22*nrow(all_ALL_5_grams.dt)%/%60)+1):(23*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.23, file = "all_ALL_5_grams.dt1.23.RData")
+rm(all_ALL_5_grams.dt1.23)
+all_ALL_5_grams.dt1.24 <- all_ALL_5_grams.dt[((23*nrow(all_ALL_5_grams.dt)%/%60)+1):(24*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.24, file = "all_ALL_5_grams.dt1.24.RData")
+rm(all_ALL_5_grams.dt1.24)
+all_ALL_5_grams.dt1.25 <- all_ALL_5_grams.dt[((24*nrow(all_ALL_5_grams.dt)%/%60)+1):(25*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.25, file = "all_ALL_5_grams.dt1.25.RData")
+rm(all_ALL_5_grams.dt1.25)
+all_ALL_5_grams.dt1.26 <- all_ALL_5_grams.dt[((25*nrow(all_ALL_5_grams.dt)%/%60)+1):(26*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.26, file = "all_ALL_5_grams.dt1.26.RData")
+rm(all_ALL_5_grams.dt1.26)
+all_ALL_5_grams.dt1.27 <- all_ALL_5_grams.dt[((26*nrow(all_ALL_5_grams.dt)%/%60)+1):(27*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.27, file = "all_ALL_5_grams.dt1.27.RData")
+rm(all_ALL_5_grams.dt1.27)
+all_ALL_5_grams.dt1.28 <- all_ALL_5_grams.dt[((27*nrow(all_ALL_5_grams.dt)%/%60)+1):(28*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.28, file = "all_ALL_5_grams.dt1.28.RData")
+rm(all_ALL_5_grams.dt1.28)
+all_ALL_5_grams.dt1.29 <- all_ALL_5_grams.dt[((28*nrow(all_ALL_5_grams.dt)%/%60)+1):(29*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.29, file = "all_ALL_5_grams.dt1.29.RData")
+rm(all_ALL_5_grams.dt1.29)
+all_ALL_5_grams.dt1.30 <- all_ALL_5_grams.dt[((29*nrow(all_ALL_5_grams.dt)%/%60)+1):(30*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.30, file = "all_ALL_5_grams.dt1.30.RData")
+rm(all_ALL_5_grams.dt1.30)
+all_ALL_5_grams.dt1.31 <- all_ALL_5_grams.dt[((30*nrow(all_ALL_5_grams.dt)%/%60)+1):(31*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.31, file = "all_ALL_5_grams.dt1.31.RData")
+rm(all_ALL_5_grams.dt1.31)
+all_ALL_5_grams.dt1.32 <- all_ALL_5_grams.dt[((31*nrow(all_ALL_5_grams.dt)%/%60)+1):(32*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.32, file = "all_ALL_5_grams.dt1.32.RData")
+rm(all_ALL_5_grams.dt1.32)
+all_ALL_5_grams.dt1.33 <- all_ALL_5_grams.dt[((32*nrow(all_ALL_5_grams.dt)%/%60)+1):(33*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.33, file = "all_ALL_5_grams.dt1.33.RData")
+rm(all_ALL_5_grams.dt1.33)
+all_ALL_5_grams.dt1.34 <- all_ALL_5_grams.dt[((33*nrow(all_ALL_5_grams.dt)%/%60)+1):(34*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.34, file = "all_ALL_5_grams.dt1.34.RData")
+rm(all_ALL_5_grams.dt1.34)
+all_ALL_5_grams.dt1.35 <- all_ALL_5_grams.dt[((34*nrow(all_ALL_5_grams.dt)%/%60)+1):(35*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.35, file = "all_ALL_5_grams.dt1.35.RData")
+rm(all_ALL_5_grams.dt1.35)
+all_ALL_5_grams.dt1.36 <- all_ALL_5_grams.dt[((35*nrow(all_ALL_5_grams.dt)%/%60)+1):(36*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.36, file = "all_ALL_5_grams.dt1.36.RData")
+rm(all_ALL_5_grams.dt1.36)
+all_ALL_5_grams.dt1.37 <- all_ALL_5_grams.dt[((36*nrow(all_ALL_5_grams.dt)%/%60)+1):(37*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.37, file = "all_ALL_5_grams.dt1.37.RData")
+rm(all_ALL_5_grams.dt1.37)
+all_ALL_5_grams.dt1.38 <- all_ALL_5_grams.dt[((37*nrow(all_ALL_5_grams.dt)%/%60)+1):(38*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.38, file = "all_ALL_5_grams.dt1.38.RData")
+rm(all_ALL_5_grams.dt1.38)
+all_ALL_5_grams.dt1.39 <- all_ALL_5_grams.dt[((38*nrow(all_ALL_5_grams.dt)%/%60)+1):(39*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.39, file = "all_ALL_5_grams.dt1.39.RData")
+rm(all_ALL_5_grams.dt1.39)
+all_ALL_5_grams.dt1.40 <- all_ALL_5_grams.dt[((39*nrow(all_ALL_5_grams.dt)%/%60)+1):(40*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.40, file = "all_ALL_5_grams.dt1.40.RData")
+rm(all_ALL_5_grams.dt1.40)
+all_ALL_5_grams.dt1.41 <- all_ALL_5_grams.dt[((40*nrow(all_ALL_5_grams.dt)%/%60)+1):(41*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.41, file = "all_ALL_5_grams.dt1.41.RData")
+rm(all_ALL_5_grams.dt1.41)
+all_ALL_5_grams.dt1.42 <- all_ALL_5_grams.dt[((41*nrow(all_ALL_5_grams.dt)%/%60)+1):(42*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.42, file = "all_ALL_5_grams.dt1.42.RData")
+rm(all_ALL_5_grams.dt1.42)
+all_ALL_5_grams.dt1.43 <- all_ALL_5_grams.dt[((42*nrow(all_ALL_5_grams.dt)%/%60)+1):(43*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.43, file = "all_ALL_5_grams.dt1.43.RData")
+rm(all_ALL_5_grams.dt1.43)
+all_ALL_5_grams.dt1.44 <- all_ALL_5_grams.dt[((43*nrow(all_ALL_5_grams.dt)%/%60)+1):(44*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.44, file = "all_ALL_5_grams.dt1.44.RData")
+rm(all_ALL_5_grams.dt1.44)
+all_ALL_5_grams.dt1.45 <- all_ALL_5_grams.dt[((44*nrow(all_ALL_5_grams.dt)%/%60)+1):(45*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.45, file = "all_ALL_5_grams.dt1.45.RData")
+rm(all_ALL_5_grams.dt1.45)
+all_ALL_5_grams.dt1.46 <- all_ALL_5_grams.dt[((45*nrow(all_ALL_5_grams.dt)%/%60)+1):(46*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.46, file = "all_ALL_5_grams.dt1.46.RData")
+rm(all_ALL_5_grams.dt1.46)
+all_ALL_5_grams.dt1.47 <- all_ALL_5_grams.dt[((46*nrow(all_ALL_5_grams.dt)%/%60)+1):(47*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.47, file = "all_ALL_5_grams.dt1.47.RData")
+rm(all_ALL_5_grams.dt1.47)
+all_ALL_5_grams.dt1.48 <- all_ALL_5_grams.dt[((47*nrow(all_ALL_5_grams.dt)%/%60)+1):(48*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.48, file = "all_ALL_5_grams.dt1.48.RData")
+rm(all_ALL_5_grams.dt1.48)
+all_ALL_5_grams.dt1.49 <- all_ALL_5_grams.dt[((48*nrow(all_ALL_5_grams.dt)%/%60)+1):(49*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.49, file = "all_ALL_5_grams.dt1.49.RData")
+rm(all_ALL_5_grams.dt1.49)
+all_ALL_5_grams.dt1.50 <- all_ALL_5_grams.dt[((49*nrow(all_ALL_5_grams.dt)%/%60)+1):(50*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.50, file = "all_ALL_5_grams.dt1.50.RData")
+rm(all_ALL_5_grams.dt1.50)
+all_ALL_5_grams.dt1.51 <- all_ALL_5_grams.dt[((50*nrow(all_ALL_5_grams.dt)%/%60)+1):(51*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.51, file = "all_ALL_5_grams.dt1.51.RData")
+rm(all_ALL_5_grams.dt1.51)
+all_ALL_5_grams.dt1.52 <- all_ALL_5_grams.dt[((51*nrow(all_ALL_5_grams.dt)%/%60)+1):(52*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.52, file = "all_ALL_5_grams.dt1.52.RData")
+rm(all_ALL_5_grams.dt1.52)
+all_ALL_5_grams.dt1.53 <- all_ALL_5_grams.dt[((52*nrow(all_ALL_5_grams.dt)%/%60)+1):(53*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.53, file = "all_ALL_5_grams.dt1.53.RData")
+rm(all_ALL_5_grams.dt1.53)
+all_ALL_5_grams.dt1.54 <- all_ALL_5_grams.dt[((53*nrow(all_ALL_5_grams.dt)%/%60)+1):(54*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.54, file = "all_ALL_5_grams.dt1.54.RData")
+rm(all_ALL_5_grams.dt1.54)
+all_ALL_5_grams.dt1.55 <- all_ALL_5_grams.dt[((54*nrow(all_ALL_5_grams.dt)%/%60)+1):(55*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.55, file = "all_ALL_5_grams.dt1.55.RData")
+rm(all_ALL_5_grams.dt1.55)
+all_ALL_5_grams.dt1.56 <- all_ALL_5_grams.dt[((55*nrow(all_ALL_5_grams.dt)%/%60)+1):(56*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.56, file = "all_ALL_5_grams.dt1.56.RData")
+rm(all_ALL_5_grams.dt1.56)
+all_ALL_5_grams.dt1.57 <- all_ALL_5_grams.dt[((56*nrow(all_ALL_5_grams.dt)%/%60)+1):(57*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.57, file = "all_ALL_5_grams.dt1.57.RData")
+rm(all_ALL_5_grams.dt1.57)
+all_ALL_5_grams.dt1.58 <- all_ALL_5_grams.dt[((57*nrow(all_ALL_5_grams.dt)%/%60)+1):(58*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.58, file = "all_ALL_5_grams.dt1.58.RData")
+rm(all_ALL_5_grams.dt1.58)
+all_ALL_5_grams.dt1.59 <- all_ALL_5_grams.dt[((58*nrow(all_ALL_5_grams.dt)%/%60)+1):(59*nrow(all_ALL_5_grams.dt)%/%60),]
+save(all_ALL_5_grams.dt1.59, file = "all_ALL_5_grams.dt1.59.RData")
+rm(all_ALL_5_grams.dt1.59)
+all_ALL_5_grams.dt1.60 <- all_ALL_5_grams.dt[((59*nrow(all_ALL_5_grams.dt)%/%60)+1):nrow(all_ALL_5_grams.dt),]
+save(all_ALL_5_grams.dt1.60, file = "all_ALL_5_grams.dt1.60.RData")
+rm(all_ALL_5_grams.dt1.60)

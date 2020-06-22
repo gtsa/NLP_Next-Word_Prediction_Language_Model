@@ -1,0 +1,297 @@
+library(stringr)
+library(data.table)
+library(dplyr)
+
+load("S_aggreg5.RData")
+load("S_aggreg_5_grams1x.RData")
+d <- rbind(S_aggreg5.dt, S_aggreg_5_grams1x.dt)
+rm(S_aggreg_5_grams1x.dt)
+d <- aggregate(d$S, by=list(W_n_1=d$W_n_1, W=d$W), FUN=sum)
+d
+colnames(d)[3] <- "S"
+d
+S_aggreg_5_grams.dt <- d[d[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+save(S_aggreg_5_grams.dt, file="S_aggreg_5_grams.RData")
+rm(list = ls())
+
+load(file="all_ALL_2_grams.RData")
+
+all_ALL_4_grams.dt1.1 <- all_ALL_4_grams.dt[1:(nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.1, file = "all_ALL_4_grams.dt1.1.RData")
+rm(all_ALL_4_grams.dt1.1)
+all_ALL_4_grams.dt1.2 <- all_ALL_4_grams.dt[(nrow(all_ALL_4_grams.dt)%/%10+1):(2*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.2, file = "all_ALL_4_grams.dt1.2.RData")
+rm(all_ALL_4_grams.dt1.2)
+
+all_ALL_4_grams.dt1.3 <- all_ALL_4_grams.dt[((2*nrow(all_ALL_4_grams.dt)%/%10)+1):(3*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.3, file = "all_ALL_4_grams.dt1.3.RData")
+rm(all_ALL_4_grams.dt1.3)
+
+all_ALL_4_grams.dt1.4 <- all_ALL_4_grams.dt[((3*nrow(all_ALL_4_grams.dt)%/%10)+1):(4*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.4, file = "all_ALL_4_grams.dt1.4.RData")
+rm(all_ALL_4_grams.dt1.4)
+
+all_ALL_4_grams.dt1.5 <- all_ALL_4_grams.dt[((4*nrow(all_ALL_4_grams.dt)%/%10)+1):(5*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.5, file = "all_ALL_4_grams.dt1.5.RData")
+rm(all_ALL_4_grams.dt1.5)
+
+all_ALL_4_grams.dt1.6 <- all_ALL_4_grams.dt[((5*nrow(all_ALL_4_grams.dt)%/%10)+1):(6*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.6, file = "all_ALL_4_grams.dt1.6.RData")
+rm(all_ALL_4_grams.dt1.6)
+
+all_ALL_4_grams.dt1.4 <- all_ALL_4_grams.dt[((6*nrow(all_ALL_4_grams.dt)%/%10)+1):(7*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.7, file = "all_ALL_4_grams.dt1.7.RData")
+rm(all_ALL_4_grams.dt1.7)
+
+all_ALL_4_grams.dt1.5 <- all_ALL_4_grams.dt[((7*nrow(all_ALL_4_grams.dt)%/%10)+1):(8*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.8, file = "all_ALL_4_grams.dt1.8.RData")
+rm(all_ALL_4_grams.dt1.8)
+
+all_ALL_4_grams.dt1.3 <- all_ALL_4_grams.dt[((8*nrow(all_ALL_4_grams.dt)%/%10)+1):(9*nrow(all_ALL_4_grams.dt)%/%10),]
+save(all_ALL_4_grams.dt1.9, file = "all_ALL_4_grams.dt1.9.RData")
+rm(all_ALL_4_grams.dt1.9)
+
+all_ALL_4_grams.dt1.4 <- all_ALL_4_grams.dt[((9*nrow(all_ALL_4_grams.dt)%/%10)+1):nrow(all_ALL_4_grams.dt),]
+save(all_ALL_4_grams.dt1.10, file = "all_ALL_4_grams.dt1.10.RData")
+rm(all_ALL_4_grams.dt1.10)
+
+rm(all_ALL_4_grams.dt)
+
+
+all_ALL_5_grams.dt1.1 <- all_ALL_5_grams.dt[1:(nrow(all_ALL_5_grams.dt)%/%2),]
+save(all_ALL_5_grams.dt1.1, file = "all_ALL_5_grams.dt1.1.RData")
+rm(all_ALL_5_grams.dt1.1)
+all_ALL_5_grams.dt1.2 <- all_ALL_5_grams.dt[(nrow(all_ALL_5_grams.dt)%/%2+1):nrow(all_ALL_5_grams.dt),]
+rm(all_ALL_5_grams.dt)
+save(all_ALL_5_grams.dt1.2, file = "all_ALL_5_grams.dt1.2.RData")
+rm(all_ALL_5_grams.dt1.2)
+
+split(1:200, ceiling(seq_along(1:200)/21))
+
+all_Above1x_2_grams.dt <- all_ALL_2_grams.dt[which(all_ALL_2_grams.dt$y.ed>1),]
+rm(all_ALL_2_grams.dt)
+save(all_Above1x_2_grams.dt, file = "all_Above1x_2_grams.RData")
+all_Above2x_2_grams.dt <- all_Above1x_2_grams.dt[which(all_Above1x_2_grams.dt$y.ed>2),]
+rm(all_Above1x_2_grams.dt)
+save(all_Above2x_2_grams.dt, file = "all_Above2x_2_grams.RData")
+all_Above3x_2_grams.dt <- all_Above2x_2_grams.dt[which(all_Above2x_2_grams.dt$y.ed>3),]
+rm(all_Above2x_2_grams.dt)
+save(all_Above3x_2_grams.dt, file = "all_Above3x_2_grams.RData")
+rm(all_Above3x_2_grams.dt)
+
+load(file="all_ALL_5_grams.RData")
+all_Above1x_5_grams.dt <- all_ALL_5_grams.dt[which(all_ALL_5_grams.dt$y.ed>1),]
+rm(all_ALL_5_grams.dt)
+save(all_Above1x_5_grams.dt, file = "all_Above1x_5_grams.RData")
+all_Above2x_5_grams.dt <- all_Above1x_5_grams.dt[which(all_Above1x_5_grams.dt$y.ed>2),]
+rm(all_Above1x_5_grams.dt)
+save(all_Above2x_5_grams.dt, file = "all_Above2x_5_grams.RData")
+all_Above3x_5_grams.dt <- all_Above2x_5_grams.dt[which(all_Above2x_5_grams.dt$y.ed>3),]
+rm(all_Above2x_5_grams.dt)
+save(all_Above3x_5_grams.dt, file = "all_Above3x_5_grams.RData")
+rm(all_Above3x_5_grams.dt)
+
+
+
+
+load(file = "all_Above2x_5_grams.RData")
+load(file = "all_Above2x_4_grams.RData")
+setkey(all_Above2x_4_grams.dt,x)
+S_aggreg_5_grams2x.dt <- all_Above2x_5_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above2x_5_grams.dt[,1], word, 1, 4, sep=" ")),
+           "W"=unlist(lapply(all_Above2x_5_grams.dt[,1], word, 5, 5, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed/unlist(all_Above2x_4_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_5_grams2x.dt <- S_aggreg_5_grams2x.dt[S_aggreg_5_grams2x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_5_grams2x_EXT.dt <- S_aggreg_5_grams2x.dt[S_aggreg_5_grams2x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above2x_5_grams.dt)
+save(S_aggreg_5_grams2x.dt, file = "S_aggreg_5_grams2x.RData")
+save(S_aggreg_5_grams2x_EXT.dt, file = "S_aggreg_5_grams2x_EXT.RData")
+rm(S_aggreg_5_grams2x.dt)
+rm(S_aggreg_5_grams2x_EXT.dt)
+
+load(file = "all_Above2x_3_grams.RData")
+setkey(all_Above2x_3_grams.dt,x)
+S_aggreg_4_grams2x.dt <- all_Above2x_4_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above2x_4_grams.dt[,1], word, 1, 3, sep=" ")),
+           "W"=unlist(lapply(all_Above2x_4_grams.dt[,1], word, 4, 4, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4/unlist(all_Above2x_3_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_4_grams2x.dt <- S_aggreg_4_grams2x.dt[S_aggreg_4_grams2x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_4_grams2x_EXT.dt <- S_aggreg_4_grams2x.dt[S_aggreg_4_grams2x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above2x_4_grams.dt)
+save(S_aggreg_4_grams2x.dt, file = "S_aggreg_4_grams2x.RData")
+save(S_aggreg_4_grams2x_EXT.dt, file = "S_aggreg_4_grams2x_EXT.RData")
+rm(S_aggreg_4_grams2x.dt)
+rm(S_aggreg_4_grams2x_EXT.dt)
+
+load(file = "all_Above2x_2_grams.RData")
+setkey(all_Above2x_2_grams.dt,x)
+S_aggreg_3_grams2x.dt <- all_Above2x_3_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above2x_3_grams.dt[,1], word, 1, 2, sep=" ")),
+           "W"=unlist(lapply(all_Above2x_3_grams.dt[,1], word, 3, 3, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4*.4/unlist(all_Above2x_2_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_3_grams2x.dt <- S_aggreg_3_grams2x.dt[S_aggreg_3_grams2x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_3_grams2x_EXT.dt <- S_aggreg_3_grams2x.dt[S_aggreg_3_grams2x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above2x_3_grams.dt)
+save(S_aggreg_3_grams2x.dt, file = "S_aggreg_3_grams2x.RData")
+save(S_aggreg_3_grams2x_EXT.dt, file = "S_aggreg_3_grams2x_EXT.RData")
+rm(S_aggreg_3_grams2x.dt)
+rm(S_aggreg_3_grams2x_EXT.dt)
+
+
+load(file = "all_Above2x_1_grams.RData")
+setkey(all_Above2x_1_grams.dt,x)
+S_aggreg_2_grams2x.dt <- all_Above2x_2_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above2x_2_grams.dt[,1], word, 1, 1, sep=" ")),
+           "W"=unlist(lapply(all_Above2x_2_grams.dt[,1], word, 2, 2, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4*.4*.4/unlist(all_Above2x_1_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_2_grams2x.dt <- S_aggreg_2_grams2x.dt[S_aggreg_2_grams2x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_2_grams2x_EXT.dt <- S_aggreg_2_grams2x.dt[S_aggreg_2_grams2x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above2x_2_grams.dt)
+save(S_aggreg_2_grams2x.dt, file = "S_aggreg_2_grams2x.RData")
+save(S_aggreg_2_grams2x_EXT.dt, file = "S_aggreg_2_grams2x_EXT.RData")
+rm(S_aggreg_2_grams2x.dt)
+rm(S_aggreg_2_grams2x_EXT.dt)
+
+S_aggreg_1_grams2x.dt <- data.table("W"=unlist(all_Above2x_1_grams.dt[1:5,1]), "S"=unlist(all_Above2x_1_grams.dt[1:5,3]*.4*.4*.4*.4/100))
+S_aggreg_1_grams2x_EXT.dt <- data.table("W"=unlist(all_Above2x_1_grams.dt[1:5,1]), "S"=unlist(all_Above2x_1_grams.dt[1:5,3]*.4*.4*.4*.4/100))
+save(S_aggreg_1_grams2x.dt, file = "S_aggreg_1_grams2x.RData")
+save(S_aggreg_1_grams2x_EXT.dt, file = "S_aggreg_1_grams2x_EXT.RData")
+rm(all_Above2x_1_grams.dt)
+rm(S_aggreg_1_grams2x.dt)
+rm(S_aggreg_1_grams2x_EXT.dt)
+
+
+
+
+load(file = "all_Above1x_5_grams.RData")
+load(file = "all_Above1x_4_grams.RData")
+setkey(all_Above1x_4_grams.dt,x)
+S_aggreg_5_grams1x.dt <- all_Above1x_5_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above1x_5_grams.dt[,1], word, 1, 4, sep=" ")),
+           "W"=unlist(lapply(all_Above1x_5_grams.dt[,1], word, 5, 5, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed/unlist(all_Above1x_4_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_5_grams1x.dt <- S_aggreg_5_grams1x.dt[S_aggreg_5_grams1x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_5_grams1x_EXT.dt <- S_aggreg_5_grams1x.dt[S_aggreg_5_grams1x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above1x_5_grams.dt)
+save(S_aggreg_5_grams1x.dt, file = "S_aggreg_5_grams1x.RData")
+save(S_aggreg_5_grams1x_EXT.dt, file = "S_aggreg_5_grams1x_EXT.RData")
+rm(S_aggreg_5_grams1x.dt)
+rm(S_aggreg_5_grams1x_EXT.dt)
+
+load(file = "all_Above1x_3_grams.RData")
+setkey(all_Above1x_3_grams.dt,x)
+S_aggreg_4_grams1x.dt <- all_Above1x_4_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above1x_4_grams.dt[,1], word, 1, 3, sep=" ")),
+           "W"=unlist(lapply(all_Above1x_4_grams.dt[,1], word, 4, 4, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4/unlist(all_Above1x_3_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_4_grams1x.dt <- S_aggreg_4_grams1x.dt[S_aggreg_4_grams1x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_4_grams1x_EXT.dt <- S_aggreg_4_grams1x.dt[S_aggreg_4_grams1x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above1x_4_grams.dt)
+save(S_aggreg_4_grams1x.dt, file = "S_aggreg_4_grams1x.RData")
+save(S_aggreg_4_grams1x_EXT.dt, file = "S_aggreg_4_grams1x_EXT.RData")
+rm(S_aggreg_4_grams1x.dt)
+rm(S_aggreg_4_grams1x_EXT.dt)
+
+load(file = "all_Above1x_2_grams.RData")
+setkey(all_Above1x_2_grams.dt,x)
+S_aggreg_3_grams1x.dt <- all_Above1x_3_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above1x_3_grams.dt[,1], word, 1, 2, sep=" ")),
+           "W"=unlist(lapply(all_Above1x_3_grams.dt[,1], word, 3, 3, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4*.4/unlist(all_Above1x_2_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_3_grams1x.dt <- S_aggreg_3_grams1x.dt[S_aggreg_3_grams1x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_3_grams1x_EXT.dt <- S_aggreg_3_grams1x.dt[S_aggreg_3_grams1x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above1x_3_grams.dt)
+save(S_aggreg_3_grams1x.dt, file = "S_aggreg_3_grams1x.RData")
+save(S_aggreg_3_grams1x_EXT.dt, file = "S_aggreg_3_grams1x_EXT.RData")
+rm(S_aggreg_3_grams1x.dt)
+rm(S_aggreg_3_grams1x_EXT.dt)
+
+
+load(file = "all_Above1x_1_grams.RData")
+setkey(all_Above1x_1_grams.dt,x)
+S_aggreg_2_grams1x.dt <- all_Above1x_2_grams.dt [,1:2] %>%
+    mutate("W_n_1"=unlist(lapply(all_Above1x_2_grams.dt[,1], word, 1, 1, sep=" ")),
+           "W"=unlist(lapply(all_Above1x_2_grams.dt[,1], word, 2, 2, sep=" "))) %>%
+    transmute(W_n_1, W, S=y.ed*.4*.4*.4/unlist(all_Above1x_1_grams.dt[W_n_1,2])) %>%
+    data.table()  %>%
+    setkey(W_n_1)
+S_aggreg_2_grams1x.dt <- S_aggreg_2_grams1x.dt[S_aggreg_2_grams1x.dt[, .I[1:5], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+S_aggreg_2_grams1x_EXT.dt <- S_aggreg_2_grams1x.dt[S_aggreg_2_grams1x.dt[, .I[1:10], by = W_n_1]$V1]  %>%
+    setkey(W_n_1)  %>%
+    na.omit(cols = "S")  %>%
+    setkey(W_n_1)
+rm(all_Above1x_2_grams.dt)
+save(S_aggreg_2_grams1x.dt, file = "S_aggreg_2_grams1x.RData")
+save(S_aggreg_2_grams1x_EXT.dt, file = "S_aggreg_2_grams1x_EXT.RData")
+rm(S_aggreg_2_grams1x.dt)
+rm(S_aggreg_2_grams1x_EXT.dt)
+
+S_aggreg_1_grams1x.dt <- data.table("W"=unlist(all_Above1x_1_grams.dt[1:5,1]), "S"=unlist(all_Above1x_1_grams.dt[1:5,3]*.4*.4*.4*.4/100))
+S_aggreg_1_grams1x_EXT.dt <- data.table("W"=unlist(all_Above1x_1_grams.dt[1:5,1]), "S"=unlist(all_Above1x_1_grams.dt[1:5,3]*.4*.4*.4*.4/100))
+save(S_aggreg_1_grams1x.dt, file = "S_aggreg_1_grams1x.RData")
+save(S_aggreg_1_grams1x_EXT.dt, file = "S_aggreg_1_grams1x_EXT.RData")
+rm(all_Above1x_1_grams.dt)
+rm(S_aggreg_1_grams1x.dt)
+rm(S_aggreg_1_grams1x_EXT.dt)

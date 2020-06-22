@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1592840120854.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1999300263",
+    "id" : "3D844F15",
+    "lastKnownWriteTime" : 1588156584,
+    "last_content_update" : 1588156584,
+    "path" : "~/Courses/Coursera_R/10_Capstone/NLP_Next-Word_Prediction_Language_Model/code.R",
+    "project_path" : "code.R",
+    "properties" : {
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

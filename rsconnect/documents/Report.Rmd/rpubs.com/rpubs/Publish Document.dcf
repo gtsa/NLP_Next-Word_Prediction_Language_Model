@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/619557/71fb7bcda87d4752add00c32e06a6473
+bundleId: https://api.rpubs.com/api/v1/document/619557/71fb7bcda87d4752add00c32e06a6473
+url: http://rpubs.com/geotsa/619557
+when: 1590510471.09429

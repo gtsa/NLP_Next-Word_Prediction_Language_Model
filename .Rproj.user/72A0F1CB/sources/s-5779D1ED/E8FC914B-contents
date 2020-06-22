@@ -1,0 +1,634 @@
+---
+title: "Coursera Data Science with R Capstone: Milestone Report"
+author: "gtsa"
+date: "30/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+## Introduction
+
+This is the Milestone Report of our project (collaboration: Coursera + Swiftkey) to create a predictive text model using a large corpus of documents as training data. Based on NLP techniques, our language model built its understanding of the English language from 3 different corpora: a list of blog posts, a list of news articles, and a list of tweets. Thus, we briefly present here the main aspects of our data manipulation as well as some critical problems for the development of the algorithm which occupied our exploratory data analysis:
+
+1. **Data Loading, Cleaning and Tidying**.
+3. **Tokenization** - identifying appropriate tokens such as words, punctuation, and numbers.
+4. **N-Grams Generation and Selection** - for predicting the *N* word based on the the previous *N-1* words
+5. **Profanity filtering** - removing profanity and other words you do not want to predict.
+ 
+
+## Basic Data Manipulation
+```{r message=FALSE}
+library(quanteda)
+library(data.table)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r load_data, echo=F}
+load(file="all_TOP_1_grams.RData")
+load(file="all_50K_1_grams.RData")
+load(file="all_Above3x_1_grams.RData")
+load(file="twitter_50K_1_grams.RData")
+load(file="blogs_50K_1_grams.RData")
+load(file="news_50K_1_grams.RData")
+load(file="twitter_ALL_1_grams.RData")
+load(file="blogs_ALL_1_grams.RData")
+load(file="news_ALL_1_grams.RData")
+load(file="all_TOP_2_grams.RData")
+load(file="all_50K_2_grams.RData")
+load(file="all_Above3x_2_grams.RData")
+load(file="twitter_50K_2_grams.RData")
+load(file="blogs_50K_2_grams.RData")
+load(file="news_50K_2_grams.RData")
+load(file="all_TOP_3_grams.RData")
+load(file="all_50K_3_grams.RData")
+load(file="all_Above3x_3_grams.RData")
+load(file="twitter_50K_3_grams.RData")
+load(file="blogs_50K_3_grams.RData")
+load(file="news_50K_3_grams.RData")
+load(file="all_TOP_4_grams.RData")
+load(file="all_50K_4_grams.RData")
+load(file="all_Above3x_4_grams.RData")
+load(file="twitter_50K_4_grams.RData")
+load(file="blogs_50K_4_grams.RData")
+load(file="news_50K_4_grams.RData")
+load(file="all_TOP_5_grams.RData")
+load(file="all_50K_5_grams.RData")
+load(file="all_Above3x_5_grams.RData")
+load(file="twitter_50K_5_grams.RData")
+load(file="blogs_50K_5_grams.RData")
+load(file="news_50K_5_grams.RData")
+```
+
+```{r basic_manipulation_code}
+download.file(url = "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip",
+              destfile = "Coursera-SwiftKey.zip", method = "curl")
+unzip(zipfile = "Coursera-SwiftKey.zip", overwrite = TRUE)
+list.files("./final/en_US")
+
+twitter.v <- scan("./final/en_US/en_US.twitter.txt", what="character", sep="\n", skipNul = TRUE)
+blogs.v <- scan("./final/en_US/en_US.blogs.txt", what="character", sep="\n", skipNul = TRUE)
+news.v <- scan("./final/en_US/en_US.news.txt", what="character", sep="\n", skipNul = TRUE)
+```
+
+Having downloaded the basic dataset and loaded the text corpora and the necessary libraries, we have to tell that for what follows, we choose to use all the data and not proceed with sampling. After all, no matter how time consuming they are, data cleaning, manipulation and exploratory analysis will not repeat itself every time our prediction algorithm is run.
+
+# Basic Summaries, Tokenization and N-grams Genenation
+
+Some first basic summaries of our corpora
+
+```{r first_descriptive_statistics, echo=F}
+(descriptive1.df <- data.frame("Text.Corpus" = c("Twitter", "Blogs", "News"),
+                              "File.Size(MB)" = c(file.info("./final/en_US/en_US.twitter.txt")$size,
+                                                   file.info("./final/en_US/en_US.blogs.txt")$size,
+                                                   file.info("./final/en_US/en_US.news.txt")$size)/1024^2,
+                              "Num.of.Lines" = c(length(twitter.v),length(blogs.v), length(news.v)),
+                              "Num.of.Chars"=c(format(sum(nchar(twitter.v)), big.mark=","), 
+                                               format(sum(nchar(blogs.v)), big.mark=","),
+                                               format(sum(nchar(news.v)), big.mark=",")),
+                              "Chars/Line"=c(sum(nchar(twitter.v))/length(twitter.v),sum(nchar(blogs.v))/length(blogs.v),sum(nchar(news.v))/length(news.v)),
+                              "Max.Chars/Line"=c(max(nchar(twitter.v)), max(nchar(blogs.v)), max(nchar(news.v))),
+                              check.names = F))
+```
+
+<font size="3"><i>q</i></font>*uanteda* library will be the locomotive of our basic manipulations and analysis. Indicative of its capabilities is that in only a few lines we can :
+
+- using the *tokens()* function to proceed to tokenization (word segmentation) - removing URLs, special characters, punctuations, numbers, excess whitespace, stopwords, and changing the text to lower case and
+
+- using the *dfm()* and *tokens_ngrams()* to configure the formation and counting of sequences of words of length N, in other words of N-grams
+
+```{r n_grams_generator, eval=FALSE}
+# The datasets are really big and it's practical impossible to process them as wholes with
+# common ordinary RAM sizes, so we deal with them in chuncks of 1000 lines and we aggregate accordingly all the results
+twitter_ALL_1_grams.dt <- NULL
+chunk_length <- 1000
+for (i in 1:length(text.v)%/%chunk_length+1) {
+  text_chunk <- unlist(split(twitter.v, ceiling(seq(twitter.v)/chunk_length))[i])
+  t0kens <-tokens(
+    gsub("((([fF]|([hH][tT]))[tT][pP]([sS]?):?[/][/]:?)?([A-Za-z1-9]+(\\.|@))+[A-Za-z1-9]+)|#|@", "", text_chunk),
+    remove_punct = T,
+    remove_symbols = T,
+    remove_numbers = T,
+    remove_separators = T,
+    split_hyphens = F,
+    include_docvars = T,
+    padding = F
+  )
+  lower_tokens <- tokens_tolower(t0kens)
+  df <- data.frame(ed=colSums(dfm(tokens_ngrams(lower_tokens, n=1, concatenator = " "))))
+  dt <- data.table(x=rownames(df), y=df)
+  twitter_ALL_1_grams.dt <- rbind(twitter_ALL_1_grams.dt, dt)
+}
+twitter_ALL_1_grams.dt <- twitter_ALL_1_grams.dt[, list(y.ed=sum(y.ed)),by=x]
+twitter_ALL_1_grams.dt <- twitter_ALL_1_grams.dt[order(y.ed,decreasing=TRUE),]
+twitter_ALL_1_grams.dt <- cbind(twitter_ALL_1_grams.dt, z = 100*twitter_ALL_1_grams.dt$y.ed/sum(twitter_ALL_1_grams.dt$y.ed))
+save(twitter_ALL_1_grams.dt, file = "twitter_ALL_1_grams.RData")
+```
+
+In the same way as with twitter dataset, we process the rest of our datasets (Blogs, News and all three together).
+
+Thus, precisely due to the precious data offered by the power-horse of n-grams, we result in some more interesting insights and summaries:
+
+```{r load_large_datasets, echo=F}
+load(file="all_ALL_1_grams.RData")
+load(file="all_ALL_2_grams.RData")
+load(file="twitter_ALL_2_grams.RData")
+load(file="blogs_ALL_2_grams.RData")
+load(file="news_ALL_2_grams.RData")
+```
+
+
+```{r complete_descriptive_statistics, echo=F}
+(descriptive2.df <- data.frame("Text.Corpus" = c("Twitter", "Blogs", "News", "All"),
+                               "Num.Words" = c(format(sum(twitter_ALL_1_grams.dt$y.ed), big.mark=","),
+                                               format(sum(blogs_ALL_1_grams.dt$y.ed), big.mark=","),
+                                               format(sum(news_ALL_1_grams.dt$y.ed), big.mark=","),
+                                               format(sum(all_ALL_1_grams.dt$y.ed), big.mark=",")),
+                               "Unique.Words" = c(format(nrow(twitter_ALL_1_grams.dt), big.mark=","),
+                                                  format(nrow(blogs_ALL_1_grams.dt), big.mark=","),
+                                                  format(nrow(news_ALL_1_grams.dt), big.mark=","),
+                                                  format(nrow(all_ALL_1_grams.dt), big.mark=",")),
+                               "Words/Line" = c(sum(twitter_ALL_1_grams.dt$y.ed)/length(twitter.v),
+                                                sum(blogs_ALL_1_grams.dt$y.ed)/length(blogs.v),
+                                                sum(news_ALL_1_grams.dt$y.ed)/length(news.v),
+                                                sum(all_ALL_1_grams.dt$y.ed)/(length(twitter.v)+length(blogs.v)+length(news.v))),
+                               "Num.2.grams" = c(format(sum(twitter_ALL_2_grams.dt$y.ed), big.mark=","),
+                                                 format(sum(blogs_ALL_2_grams.dt$y.ed), big.mark=","),
+                                                 format(sum(news_ALL_2_grams.dt$y.ed), big.mark=","),
+                                                 format(sum(all_ALL_2_grams.dt$y.ed), big.mark=",")),
+                               "Unique.2.grams" = c(format(nrow(twitter_ALL_2_grams.dt), big.mark=","),
+                                                    format(nrow(blogs_ALL_2_grams.dt), big.mark=","),
+                                                    format(nrow(news_ALL_2_grams.dt), big.mark=","),
+                                                    format(nrow(all_ALL_2_grams.dt), big.mark=",")),
+                               check.names = F))
+```
+
+```{r remove_large_datasets, echo=F}
+rm(all_ALL_1_grams.dt)
+rm(all_ALL_2_grams.dt)
+rm(twitter_ALL_2_grams.dt)
+rm(blogs_ALL_2_grams.dt)
+rm(news_ALL_2_grams.dt)
+```
+
+Finally here are the horizontal histograms of the 20 most common unigrams, bigrams, trigrams, four-grams and five-grams.
+
+```{r, echo=FALSE}
+all_graphs_freq_1 <- geom_line(data=all_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_1_grams.dt)-1)), y=cum.z, colour="black", linetype="solid"))
+twitter_graphs_freq_1 <- geom_line(data=twitter_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(twitter_50K_1_grams.dt)-1)), y=cum.z, colour="blue", linetype="solid"))
+blogs_graphs_freq_1 <- geom_line(data=blogs_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(blogs_50K_1_grams.dt)-1)), y=cum.z, colour="green3", linetype="solid"))
+news_graphs_freq_1 <- geom_line(data=news_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(news_50K_1_grams.dt)-1)), y=cum.z, colour="red", linetype="solid"))
+min2_50K_1_grams.dt <- all_50K_1_grams.dt[which(all_50K_1_grams.dt$y.ed>1|all_50K_1_grams.dt$y.ed==0),]
+min3_50K_1_grams.dt <- all_50K_1_grams.dt[which(all_50K_1_grams.dt$y.ed>2|all_50K_1_grams.dt$y.ed==0),]
+min4_50K_1_grams.dt <- all_50K_1_grams.dt[which(all_50K_1_grams.dt$y.ed>3|all_50K_1_grams.dt$y.ed==0),] 
+used_graphs_freq_1 <- geom_line(data=min4_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_1_grams.dt)-1))[1:(nrow(min4_50K_1_grams.dt))], y=cum.z, colour="steelblue", linetype="solid"), size=2)
+
+all_graphs_freq_2 <- geom_line(data=all_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_2_grams.dt)-1)), y=cum.z, colour="black", linetype="longdash"))
+twitter_graphs_freq_2 <- geom_line(data=twitter_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(twitter_50K_2_grams.dt)-1)), y=cum.z, colour="blue", linetype="longdash"))
+blogs_graphs_freq_2 <- geom_line(data=blogs_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(blogs_50K_2_grams.dt)-1)), y=cum.z, colour="green3", linetype="longdash"))
+news_graphs_freq_2 <- geom_line(data=news_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(news_50K_2_grams.dt)-1)), y=cum.z, colour="red", linetype="longdash"))
+min2_50K_2_grams.dt <- all_50K_2_grams.dt[which(all_50K_2_grams.dt$y.ed>1|all_50K_2_grams.dt$y.ed==0),]
+min3_50K_2_grams.dt <- all_50K_2_grams.dt[which(all_50K_2_grams.dt$y.ed>2|all_50K_2_grams.dt$y.ed==0),]
+min4_50K_2_grams.dt <- all_50K_2_grams.dt[which(all_50K_2_grams.dt$y.ed>3|all_50K_2_grams.dt$y.ed==0),] 
+used_graphs_freq_2 <- geom_line(data=min4_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_2_grams.dt)-1))[1:(nrow(min4_50K_2_grams.dt))], y=cum.z, colour="steelblue", linetype="solid"), size=2)
+
+all_graphs_freq_3 <- geom_line(data=all_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_3_grams.dt)-1)), y=cum.z, colour="black", linetype="twodash"))
+twitter_graphs_freq_3 <- geom_line(data=twitter_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(twitter_50K_3_grams.dt)-1)), y=cum.z, colour="blue", linetype="twodash"))
+blogs_graphs_freq_3 <- geom_line(data=blogs_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(blogs_50K_3_grams.dt)-1)), y=cum.z, colour="green3", linetype="twodash"))
+news_graphs_freq_3 <- geom_line(data=news_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(news_50K_3_grams.dt)-1)), y=cum.z, colour="red", linetype="twodash"))
+min2_50K_3_grams.dt <- all_50K_3_grams.dt[which(all_50K_3_grams.dt$y.ed>1|all_50K_3_grams.dt$y.ed==0),]
+min3_50K_3_grams.dt <- all_50K_3_grams.dt[which(all_50K_3_grams.dt$y.ed>2|all_50K_3_grams.dt$y.ed==0),]
+min4_50K_3_grams.dt <- all_50K_3_grams.dt[which(all_50K_3_grams.dt$y.ed>3|all_50K_3_grams.dt$y.ed==0),] 
+used_graphs_freq_3 <- geom_line(data=min4_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_3_grams.dt)-1))[1:(nrow(min4_50K_3_grams.dt))], y=cum.z, colour="steelblue", linetype="solid"), size=2)
+
+all_graphs_freq_4 <- geom_line(data=all_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_4_grams.dt)-1)), y=cum.z, colour="black", linetype="dotdash"))
+twitter_graphs_freq_4 <- geom_line(data=twitter_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(twitter_50K_4_grams.dt)-1)), y=cum.z, colour="blue", linetype="dotdash"))
+blogs_graphs_freq_4 <- geom_line(data=blogs_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(blogs_50K_4_grams.dt)-1)), y=cum.z, colour="green3", linetype="dotdash"))
+news_graphs_freq_4 <- geom_line(data=news_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(news_50K_4_grams.dt)-1)), y=cum.z, colour="red", linetype="dotdash"))
+min2_50K_4_grams.dt <- all_50K_4_grams.dt[which(all_50K_4_grams.dt$y.ed>1|all_50K_4_grams.dt$y.ed==0),]
+min3_50K_4_grams.dt <- all_50K_4_grams.dt[which(all_50K_4_grams.dt$y.ed>2|all_50K_4_grams.dt$y.ed==0),]
+min4_50K_4_grams.dt <- all_50K_4_grams.dt[which(all_50K_4_grams.dt$y.ed>3|all_50K_4_grams.dt$y.ed==0),] 
+used_graphs_freq_4 <- geom_line(data=min4_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_4_grams.dt)-1))[1:(nrow(min4_50K_4_grams.dt))], y=cum.z, colour="steelblue", linetype="solid"), size=2)
+
+all_graphs_freq_5 <- geom_line(data=all_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_5_grams.dt)-1)), y=cum.z, colour="black", linetype="dashed"))
+twitter_graphs_freq_5 <- geom_line(data=twitter_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(twitter_50K_5_grams.dt)-1)), y=cum.z, colour="blue", linetype="dashed"))
+blogs_graphs_freq_5 <- geom_line(data=blogs_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(blogs_50K_5_grams.dt)-1)), y=cum.z, colour="green3", linetype="dashed"))
+news_graphs_freq_5 <- geom_line(data=news_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(news_50K_5_grams.dt)-1)), y=cum.z, colour="red", linetype="dashed"))
+min2_50K_5_grams.dt <- all_50K_5_grams.dt[which(all_50K_5_grams.dt$y.ed>1|all_50K_5_grams.dt$y.ed==0),]
+min3_50K_5_grams.dt <- all_50K_5_grams.dt[which(all_50K_5_grams.dt$y.ed>2|all_50K_5_grams.dt$y.ed==0),]
+min4_50K_5_grams.dt <- all_50K_5_grams.dt[which(all_50K_5_grams.dt$y.ed>3|all_50K_5_grams.dt$y.ed==0),] 
+used_graphs_freq_5 <- geom_line(data=min4_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_5_grams.dt)-1))[1:(nrow(min4_50K_5_grams.dt))], y=cum.z, colour="steelblue", linetype="solid"), size=2)
+
+```
+
+```{r fig1.1, echo=FALSE, fig.height=4, fig.width = 3}
+(graph_top_1_grams <-
+    ggplot(data=all_TOP_1_grams.dt[1:20,], aes(x=z, y=reorder(x,z))) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label = format(round(z, 2), nsmall=2)), hjust=1.1, color="white", size=2.5, family = "Serif") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif", size=10)) +
+    labs(y= "", x = "\nRelative Frequency (%)") +
+    ggtitle("Top-20 1-grams"))
+
+(graph_top_2_grams <-
+    ggplot(data=all_TOP_2_grams.dt[1:20,], aes(x=z, y=reorder(x,z))) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label = format(round(z, 2), nsmall=2)), hjust=1.1, color="white", size=2.5, family = "Serif") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif", size=10)) +
+    labs(y= "", x = "\nRelative Frequency (%)") +
+    ggtitle("Top-20 2-grams"))
+
+(graph_top_3_grams <-
+    ggplot(data=all_TOP_3_grams.dt[1:20,], aes(x=z, y=reorder(x,z))) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label = format(round(z, 3), nsmall=2)), hjust=1.1, color="white", size=2.5, family = "Serif") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif", size=10)) +
+    labs(y= "", x = "\nRelative Frequency (%)") +
+    ggtitle("Top-20 3-grams"))
+
+```
+
+```{r fig1.2, echo=FALSE, fig.height=4, fig.width = 4.5}
+(graph_top_4_grams <-
+    ggplot(data=all_TOP_4_grams.dt[1:20,], aes(x=z, y=reorder(x,z))) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label = format(round(z, 4), nsmall=2)), hjust=1.1, color="white", size=2.5, family = "Serif")+
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif", size=10)) +
+    labs(y= "", x = "\nRelative Frequency (%)") +
+    ggtitle("Top-20 4-grams"))
+
+(graph_top_5_grams <-
+    ggplot(data=all_TOP_5_grams.dt[1:20,], aes(x=z, y=reorder(x,z))) +
+    geom_bar(stat="identity", fill="steelblue")+
+    geom_text(aes(label = format(round(z, 5), nsmall=2)), hjust=1.1, color="white", size=2.5, family = "Serif")+
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif", size=10)) +
+    labs(y= "", x = "\nRelative Frequency (%)") +
+    ggtitle("Top-20 5-grams"))
+
+```
+
+# Exploratory Data Analysis
+
+### Profanity filtering - removing profanity and other words you do not want to predict.
+
+One of the most interesting issues in our project is the management of profanity. At the core of our strategy, there is the [swearWords.txt](http://www.bannedwordlist.com/lists/) list from the site http://www.bannedwordlist.com and the first step is to digest it into a pattern that we can use with grep. We try also to add the list's plurals:
+
+```{r profanity_analysis.1, eval=FALSE}
+keywords_filter <- scan("swearWords.txt", what="character", sep="\n", skipNul = TRUE)
+
+if (nchar(gsub("[^a-zA-Z0-9]", "", paste(keywords_filter, collapse = ""))) > 0){
+    pattern <- paste("((^| )", paste(keywords_filter, collapse = "($|s | ))|((^| )"), "($|s | ))", sep = "")}
+
+grep_twitter.v <- grep(pattern, twitter.v, value = TRUE)
+```
+
+```{r profanity_analysis.2, eval=FALSE, echo=FALSE}
+twitter_GREP_1_grams.dt <- NULL
+t0kens <-tokens(
+    gsub("((([fF]|([hH][tT]))[tT][pP]([sS]?):?[/][/]:?)?([A-Za-z1-9]+(\\.|@))+[A-Za-z1-9]+)|#|@", "", grep_twitter.v),
+    remove_punct = T, remove_symbols = T, remove_numbers = T, remove_separators = T, split_hyphens = F, include_docvars = T, padding = F)
+lower_tokens <- tokens_tolower(t0kens)
+df <- data.frame(ed=colSums(dfm(tokens_ngrams(lower_tokens, n=1, concatenator = " "))))
+dt <- data.table(x=rownames(df), y=df)
+twitter_GREP_1_grams.dt <- rbind(twitter_GREP_1_grams.dt, dt)
+twitter_GREP_1_grams.dt <- twitter_GREP_1_grams.dt[, list(y.ed=sum(y.ed)),by=x]
+twitter_GREP_1_grams.dt <- twitter_GREP_1_grams.dt[order(y.ed,decreasing=TRUE),]
+```
+
+```{r profanity_results.1, echo=FALSE}
+load(file="twitter_GREP_1_grams.RData")
+load(file="twitter_GREP_5_grams.RData")
+load(file = "twitter_ALL_1_grams.RData")
+load(file = "twitter_grep.RData")
+load(file = "sum_twitter_5.RData")
+load(file = "nrow_twitter_5.RData")
+load(file = "blogs_GREP_1_grams.RData")
+load(file = "blogs_GREP_5_grams.RData")
+load(file = "blogs_ALL_1_grams.RData")
+load(file = "blogs_grep.RData")
+load(file = "sum_blogs_5.RData")
+load(file = "nrow_blogs_5.RData")
+load(file = "news_GREP_1_grams.RData")
+load(file = "news_GREP_5_grams.RData")
+load(file = "news_ALL_1_grams.RData")
+load(file = "news_grep.RData")
+load(file = "sum_news_5.RData")
+load(file = "nrow_news_5.RData")
+```
+
+A first approach would be to remove from the corpus of all the three sources each of these swear words. The problem, in this case, is that the remaining n-grams would have a semantic problem, each word just before and just after the swear word would be next to each other ending up with n-grams without meaning that would affect the reliability of our predictions.
+
+An alternative approach would be to remove from our analysis all the lines that contain some of the swear words. In this case, we would be sure that we do not use "illegal" n-grams. However, we would end up losing a significant amount of training information/n-grams, as together with the n-grams that would contain swear words, we would reject those offered by the whole line we rejected. Even more, the inhomogeneity of the sources and the different average lengths of their lines would lead to an unfair and dangerous underestimation of the information given by each one of them, in our case by the blogs as it seems in the next table. This method could certainly be improved if we split all the lines into sentences and rejected only them that contain swear word(s) instead of the whole line.
+
+
+```{r profanity_results.2, echo=FALSE}
+data.frame("Text Corpus" = c("Twitter", "Blogs", "News"),
+           "Lines" = c(paste(round(100*length(twitter_grep.v)/length(twitter.v),1),"%", sep = " "),
+                       paste(round(100*length(blogs_grep.v)/length(blogs.v),1),"%", sep = " "),
+                       paste(round(100*length(news_grep.v)/length(news.v),1),"%", sep = " ")),
+           "Total Words" = c(paste(round(100*sum(twitter_GREP_1_grams.dt$y.ed)/sum(twitter_ALL_1_grams.dt$y.ed),1),"%", sep = " "),
+                             paste(round(100*sum(blogs_GREP_1_grams.dt$y.ed)/sum(blogs_ALL_1_grams.dt$y.ed),1),"%", sep = " "),
+                             paste(round(100*sum(news_GREP_1_grams.dt$y.ed)/sum(news_ALL_1_grams.dt$y.ed),1),"%", sep = " ")),
+           "Unique Words" = c(paste(round(100*nrow(twitter_GREP_1_grams.dt)/nrow(twitter_ALL_1_grams.dt),1),"%", sep = " "),
+                              paste(round(100*nrow(blogs_GREP_1_grams.dt)/nrow(blogs_ALL_1_grams.dt),1),"%", sep = " "),
+                              paste(round(100*nrow(news_GREP_1_grams.dt)/nrow(news_ALL_1_grams.dt),1),"%", sep = " ")),
+           "Total 5-grams" = c(paste(round(100*sum(twitter_GREP_5_grams.dt$y.ed)/sum_twitter_5.v,1),"%", sep = " "),
+                               paste(round(100*sum(blogs_GREP_5_grams.dt$y.ed)/sum_blogs_5.v,1),"%", sep = " "),
+                               paste(round(100*sum(news_GREP_5_grams.dt$y.ed)/sum_news_5.v,1),"%", sep = " ")),
+           "Unique 5-grams" = c(paste(round(100*nrow(twitter_GREP_5_grams.dt)/nrow_twitter_5.v,1),"%", sep = " "),
+                                paste(round(100*nrow(blogs_GREP_5_grams.dt)/nrow_blogs_5.v,1),"%", sep = " "),
+                                paste(round(100*nrow(news_GREP_5_grams.dt)/nrow_news_5.v,1),"%", sep = " ")),
+           check.names = F)
+```
+
+But more practical and reliable for our predictions would be another approach. We will leave the swear words in the body of our information, in the n-grams that will train our algorithm, and we will simply ban them from its final predictions. If the 1st, 2nd or n-st suggested word (prediction) of our algorithm is to be a swear word, the algorithm will omit it and return the next suggestion.
+
+```{r profanity_results.3, echo=FALSE}
+rm(twitter_GREP_1_grams.dt)
+rm(twitter_GREP_5_grams.dt)
+rm(twitter_ALL_1_grams.dt)
+rm(twitter_grep.v)
+rm(sum_twitter_5.v)
+rm(nrow_twitter_5.v)
+rm(blogs_GREP_1_grams.dt)
+rm(blogs_GREP_5_grams.dt)
+rm(blogs_ALL_1_grams.dt)
+rm(blogs_grep.v)
+rm(sum_blogs_5.v)
+rm(nrow_blogs_5.v)
+rm(news_GREP_1_grams.dt)
+rm(news_GREP_5_grams.dt)
+rm(news_ALL_1_grams.dt)
+rm(news_grep.v)
+rm(sum_news_5.v)
+rm(nrow_news_5.v)
+```
+
+### N-Grams Selection for the Prediction Model
+
+Besides the previous tables and figures regarding our different texts' corpora, the next figure is essential for a more thorough and global image about their particulaties. Here, we can have a good impression about the distribution of the words in theses corpora, especially for its variance. We can see for instance that the "News" corpus needs constantly more unique n-grams in a frequency sorted dictionary to cover 50% of all n-grams instances in the language? But for all three text cases as well as for the whole big corpus, it is evident that regarding the 1-grams (single words), 2.5% unique words correspond to the 90% of all word occurences. In the case of 2-grams the 5% correspond to the 70%. We can see that as we go from 1-grams to 5-grams the initially angular curve becomes more and more linear. 
+
+```{r fig2, fig.align='center', echo=FALSE, fig.show = "hold", out.width = "50%", fig.height= 6}
+(graphs_freq <- 
+    ggplot() + 
+    all_graphs_freq_1 + twitter_graphs_freq_1 + blogs_graphs_freq_1 + news_graphs_freq_1 +
+    all_graphs_freq_2 + twitter_graphs_freq_2 + blogs_graphs_freq_2 + news_graphs_freq_2 +
+    all_graphs_freq_3 + twitter_graphs_freq_3 + blogs_graphs_freq_3 + news_graphs_freq_3 +
+    all_graphs_freq_4 + twitter_graphs_freq_4 + blogs_graphs_freq_4 + news_graphs_freq_4 +
+    all_graphs_freq_5 + twitter_graphs_freq_5 + blogs_graphs_freq_5 + news_graphs_freq_5 +
+    labs(y= "Cumulative Relative Frequency of Occurrence (%)", x = "\nUnique N-grams Frequency Percentile") +
+    scale_x_continuous(breaks=seq(0, 100, 10)) +
+    scale_y_continuous(breaks=seq(0, 100, 10)) +
+    ggtitle("Cumulative Distribution of N-grams per Text Corpus") +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.key.width = unit(1.4,"cm"),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif"),
+          legend.position = c(0.79, 0.31)) +
+    scale_color_identity(name = "Text corpus",
+                         breaks = c("black", "blue", "green3", "red"),
+                         labels = c("All", "Twitter", "Blogs", "News"),
+                         guide = "legend") +
+    scale_linetype_identity(name = "N-grams",
+                            breaks = c("solid", "longdash", "twodash", "dotdash", "dashed"),
+                            labels = c("1-grams", "2-grams", "3-grams", "4-grams", "5-grams"),
+                            guide = "legend"))
+```
+
+In any case (even in the case of 5-grams) a number of n-grams are much more popular, and from some point onwards an increasingly huge number of n-grams have very few instances. Moreover, at the same time, as n increases, we observe the expected launch of the number of different unique n-grams.
+
+```{r prefig3, echo=FALSE}
+N_grams <- c(rep("1-grams" , 4) , rep("2-grams" , 4) , rep("3-grams" , 4) , rep("4-grams" , 4), rep("5-grams" , 4) )
+Used_Not_Used <- rep(c("1 time" , "2 times", "3 times", "4 or \nmore times") , 5)
+
+s<-c(nrows_olo_1_grams <- round(as.numeric(nrow(all_Above3x_1_grams.dt))*as.numeric(nrow(all_50K_1_grams.dt)/nrow(min4_50K_1_grams.dt))),
+     nrows_2min_1_grams <- round(as.numeric(nrow(all_Above3x_1_grams.dt))*as.numeric(nrow(min2_50K_1_grams.dt)/nrow(min4_50K_1_grams.dt))),
+     nrows_3min_1_grams <- round(as.numeric(nrow(all_Above3x_1_grams.dt))*as.numeric(nrow(min3_50K_1_grams.dt)/nrow(min4_50K_1_grams.dt))),
+     nrows_4min_1_grams <- as.numeric(nrow(all_Above3x_1_grams.dt)),
+     nrows_olo_2_grams <- round(as.numeric(nrow(all_Above3x_2_grams.dt))*as.numeric(nrow(all_50K_2_grams.dt)/nrow(min4_50K_2_grams.dt))),
+     nrows_2min_2_grams <- round(as.numeric(nrow(all_Above3x_2_grams.dt))*as.numeric(nrow(min2_50K_2_grams.dt)/nrow(min4_50K_2_grams.dt))),
+     nrows_3min_2_grams <- round(as.numeric(nrow(all_Above3x_2_grams.dt))*as.numeric(nrow(min3_50K_2_grams.dt)/nrow(min4_50K_2_grams.dt))),
+     nrows_4min_2_grams <- as.numeric(nrow(all_Above3x_2_grams.dt)),
+     nrows_olo_3_grams <- round(as.numeric(nrow(all_Above3x_3_grams.dt))*as.numeric(nrow(all_50K_3_grams.dt)/nrow(min4_50K_3_grams.dt))),
+     nrows_2min_3_grams <- round(as.numeric(nrow(all_Above3x_3_grams.dt))*as.numeric(nrow(min2_50K_3_grams.dt)/nrow(min4_50K_3_grams.dt))),
+     nrows_3min_3_grams <- round(as.numeric(nrow(all_Above3x_3_grams.dt))*as.numeric(nrow(min3_50K_3_grams.dt)/nrow(min4_50K_3_grams.dt))),
+     nrows_4min_3_grams <- as.numeric(nrow(all_Above3x_3_grams.dt)),
+     nrows_olo_4_grams <- round(as.numeric(nrow(all_Above3x_4_grams.dt))*as.numeric(nrow(all_50K_4_grams.dt)/nrow(min4_50K_4_grams.dt))),
+     nrows_2min_4_grams <- round(as.numeric(nrow(all_Above3x_4_grams.dt))*as.numeric(nrow(min2_50K_4_grams.dt)/nrow(min4_50K_4_grams.dt))),
+     nrows_3min_4_grams <- round(as.numeric(nrow(all_Above3x_4_grams.dt))*as.numeric(nrow(min3_50K_4_grams.dt)/nrow(min4_50K_4_grams.dt))),
+     nrows_4min_4_grams <- as.numeric(nrow(all_Above3x_4_grams.dt)),
+     nrows_olo_5_grams <- round(as.numeric(nrow(all_Above3x_5_grams.dt))*as.numeric(nrow(all_50K_5_grams.dt)/nrow(min4_50K_5_grams.dt))),
+     nrows_2min_5_grams <- round(as.numeric(nrow(all_Above3x_5_grams.dt))*as.numeric(nrow(min2_50K_5_grams.dt)/nrow(min4_50K_5_grams.dt))), 
+     nrows_3min_5_grams <- round(as.numeric(nrow(all_Above3x_5_grams.dt))*as.numeric(nrow(min3_50K_5_grams.dt)/nrow(min4_50K_5_grams.dt))),
+     nrows_4min_5_grams <- as.numeric(nrow(all_Above3x_5_grams.dt)))
+
+d<-c(sumcum_olo_1_grams <- round(as.numeric(sum(all_Above3x_1_grams.dt$y.ed))*as.numeric(sum(all_50K_1_grams.dt$y.ed)/sum(min4_50K_1_grams.dt$y.ed))),
+     sumcum_2min_1_grams <- round(as.numeric(sum(all_Above3x_1_grams.dt$y.ed))*as.numeric(sum(min2_50K_1_grams.dt$y.ed)/sum(min4_50K_1_grams.dt$y.ed))),
+     sumcum_3min_1_grams <- round(as.numeric(sum(all_Above3x_1_grams.dt$y.ed))*as.numeric(sum(min3_50K_1_grams.dt$y.ed)/sum(min4_50K_1_grams.dt$y.ed))),
+     sumcum_4min_1_grams <- as.numeric(sum(all_Above3x_1_grams.dt$y.ed)),
+     sumcum_olo_2_grams <- round(as.numeric(sum(all_Above3x_2_grams.dt$y.ed))*as.numeric(sum(all_50K_2_grams.dt$y.ed)/sum(min4_50K_2_grams.dt$y.ed))),
+     sumcum_2min_2_grams <- round(as.numeric(sum(all_Above3x_2_grams.dt$y.ed))*as.numeric(sum(min2_50K_2_grams.dt$y.ed)/sum(min4_50K_2_grams.dt$y.ed))),
+     sumcum_3min_2_grams <- round(as.numeric(sum(all_Above3x_2_grams.dt$y.ed))*as.numeric(sum(min3_50K_2_grams.dt$y.ed)/sum(min4_50K_2_grams.dt$y.ed))),
+     sumcum_4min_2_grams <- as.numeric(sum(all_Above3x_2_grams.dt$y.ed)),
+     sumcum_olo_3_grams <- round(as.numeric(sum(all_Above3x_3_grams.dt$y.ed))*as.numeric(sum(all_50K_3_grams.dt$y.ed)/sum(min4_50K_3_grams.dt$y.ed))),
+     sumcum_2min_3_grams <- round(as.numeric(sum(all_Above3x_3_grams.dt$y.ed))*as.numeric(sum(min2_50K_3_grams.dt$y.ed)/sum(min4_50K_3_grams.dt$y.ed))),
+     sumcum_3min_3_grams <- round(as.numeric(sum(all_Above3x_3_grams.dt$y.ed))*as.numeric(sum(min3_50K_3_grams.dt$y.ed)/sum(min4_50K_3_grams.dt$y.ed))),
+     sumcum_4min_3_grams <- as.numeric(sum(all_Above3x_3_grams.dt$y.ed)),
+     sumcum_olo_4_grams <- round(as.numeric(sum(all_Above3x_4_grams.dt$y.ed))*as.numeric(sum(all_50K_4_grams.dt$y.ed)/sum(min4_50K_4_grams.dt$y.ed))),
+     sumcum_2min_4_grams <- round(as.numeric(sum(all_Above3x_4_grams.dt$y.ed))*as.numeric(sum(min2_50K_4_grams.dt$y.ed)/sum(min4_50K_4_grams.dt$y.ed))),
+     sumcum_3min_4_grams <- round(as.numeric(sum(all_Above3x_4_grams.dt$y.ed))*as.numeric(sum(min3_50K_4_grams.dt$y.ed)/sum(min4_50K_4_grams.dt$y.ed))),
+     sumcum_4min_4_grams <- as.numeric(sum(all_Above3x_4_grams.dt$y.ed)),
+     sumcum_olo_5_grams <- round(as.numeric(sum(all_Above3x_5_grams.dt$y.ed))*as.numeric(sum(all_50K_5_grams.dt$y.ed)/sum(min4_50K_5_grams.dt$y.ed))),
+     sumcum_2min_5_grams <- round(as.numeric(sum(all_Above3x_5_grams.dt$y.ed))*as.numeric(sum(min2_50K_5_grams.dt$y.ed)/sum(min4_50K_5_grams.dt$y.ed))), 
+     sumcum_3min_5_grams <- round(as.numeric(sum(all_Above3x_5_grams.dt$y.ed))*as.numeric(sum(min3_50K_5_grams.dt$y.ed)/sum(min4_50K_5_grams.dt$y.ed))),
+     sumcum_4min_5_grams <- as.numeric(sum(all_Above3x_5_grams.dt$y.ed)))
+
+
+
+value1 <- c(nrows_olo_1_grams-nrows_2min_1_grams, nrows_2min_1_grams-nrows_3min_1_grams, nrows_3min_1_grams-nrows_4min_1_grams, nrows_4min_1_grams,
+           nrows_olo_2_grams-nrows_2min_2_grams, nrows_2min_2_grams-nrows_3min_2_grams, nrows_3min_2_grams-nrows_4min_2_grams, nrows_4min_2_grams,
+           nrows_olo_3_grams-nrows_2min_3_grams, nrows_2min_3_grams-nrows_3min_3_grams, nrows_3min_3_grams-nrows_4min_3_grams, nrows_4min_3_grams,
+           nrows_olo_4_grams-nrows_2min_4_grams, nrows_2min_4_grams-nrows_3min_4_grams, nrows_3min_4_grams-nrows_4min_4_grams, nrows_4min_4_grams,
+           nrows_olo_5_grams-nrows_2min_5_grams, nrows_2min_5_grams-nrows_3min_5_grams, nrows_3min_5_grams-nrows_4min_5_grams, nrows_4min_5_grams)
+
+value2 <- c(sumcum_olo_1_grams-sumcum_2min_1_grams, sumcum_2min_1_grams-sumcum_3min_1_grams, sumcum_3min_1_grams-sumcum_4min_1_grams, sumcum_4min_1_grams,
+           sumcum_olo_2_grams-sumcum_2min_2_grams, sumcum_2min_2_grams-sumcum_3min_2_grams, sumcum_3min_2_grams-sumcum_4min_2_grams, sumcum_4min_2_grams,
+           sumcum_olo_3_grams-sumcum_2min_3_grams, sumcum_2min_3_grams-sumcum_3min_3_grams, sumcum_3min_3_grams-sumcum_4min_3_grams, sumcum_4min_3_grams,
+           sumcum_olo_4_grams-sumcum_2min_4_grams, sumcum_2min_4_grams-sumcum_3min_4_grams, sumcum_3min_4_grams-sumcum_4min_4_grams, sumcum_4min_4_grams,
+           sumcum_olo_5_grams-sumcum_2min_5_grams, sumcum_2min_5_grams-sumcum_3min_5_grams, sumcum_3min_5_grams-sumcum_4min_5_grams, sumcum_4min_5_grams)
+
+percent1 <- 100*c(value1[4]/sum(value1[1:4]), value1[3]/sum(value1[1:4]), value1[2]/sum(value1[1:4]), value1[1]/sum(value1[1:4]),
+             value1[8]/sum(value1[5:8]), value1[7]/sum(value1[5:8]), value1[6]/sum(value1[5:8]), value1[5]/sum(value1[5:8]),
+             value1[12]/sum(value1[9:12]), value1[11]/sum(value1[9:12]), value1[10]/sum(value1[9:12]), value1[9]/sum(value1[9:12]),
+             value1[16]/sum(value1[13:16]), value1[15]/sum(value1[13:16]), value1[14]/sum(value1[13:16]), value1[13]/sum(value1[13:16]),
+             value1[20]/sum(value1[17:20]), value1[19]/sum(value1[17:20]), value1[18]/sum(value1[17:20]), value1[17]/sum(value1[17:20]))
+
+percent2 <- 100*c(value2[4]/sum(value2[1:4]), value2[3]/sum(value2[1:4]), value2[2]/sum(value2[1:4]), value2[1]/sum(value2[1:4]),
+             value2[8]/sum(value2[5:8]), value2[7]/sum(value2[5:8]), value2[6]/sum(value2[5:8]), value2[5]/sum(value2[5:8]),
+             value2[12]/sum(value2[9:12]), value2[11]/sum(value2[9:12]), value2[10]/sum(value2[9:12]), value2[9]/sum(value2[9:12]),
+             value2[16]/sum(value2[13:16]), value2[15]/sum(value2[13:16]), value2[14]/sum(value2[13:16]), value2[13]/sum(value2[13:16]),
+             value2[20]/sum(value2[17:20]), value2[19]/sum(value2[17:20]), value2[18]/sum(value2[17:20]), value2[17]/sum(value2[17:20]))
+
+data <- data.frame(N_grams,Used_Not_Used,value1,value2)
+
+```
+
+```{r fig3_4, echo=FALSE, fig.show = "hold", out.width = "50%", fig.height= 8}
+# Stacke
+p <-ggplot(data, aes(fill=Used_Not_Used, y=value1, x=N_grams)) + 
+    geom_bar(position="stack", stat="identity") +
+    scale_fill_manual(values = c("tomato", "steelblue", "olivedrab4", "firebrick4")) +
+    labs(y= "Number of Unique N-grams (millions)\n", x = "") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif"),
+          legend.position = c(0.31, 0.81)) + 
+    guides(fill=guide_legend(title="Occurences")) +
+    ggtitle("\n\n\n\n\n\n\n\nUNIQUE N-grams \nby Number of Occurences") +
+  guides(color = FALSE) +
+  scale_y_continuous(labels = scales::unit_format(unit = "M",
+                                                  scale = 1e-6), breaks = seq(0, 120000000, 10000000))
+
+p +  annotate("text", x = rep(1:5, each=4), y = c(sum(data[c(1,2,3,4),3])+c(14,40,66,92)*100000,
+                                                  sum(data[c(5,6,7,8),3])+c(14,40,66,92)*100000,
+                                                  sum(data[c(9,10,11,12),3])+c(14,40,66,92)*100000,
+                                                  sum(data[c(13,14,15,16),3])+c(14,40,66,92)*100000,
+                                                  sum(data[c(17,18,19,20),3])+c(14,40,66,92)*100000),
+              color=rep(c("firebrick4","olivedrab4","blue4", "tomato"),5), fontface="bold", label = paste(round(percent1,1),"%",sep = " "))
+
+r <-ggplot(data, aes(fill=Used_Not_Used, y=value2, x=N_grams)) + 
+    geom_bar(position="stack", stat="identity") +
+    scale_fill_manual(values = c("tomato", "steelblue", "olivedrab4", "firebrick4")) +
+    labs(y= "Frequency (millions)\n", x = "") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif"),
+          legend.position = c(0.81, 0.81)) + 
+    guides(fill=guide_legend(title="Occurences")) +
+    ggtitle("N-grams' Frequency by \nNumber of Occurences") +
+  guides(color = FALSE) +
+  scale_y_continuous(labels = scales::unit_format(unit = "M",
+                                                  scale = 1e-6), breaks = seq(0, 120000000, 10000000))
+
+r +  annotate("text", x = rep(1:5, each=4), y = c(sum(data[c(1,2,3,4),4])+c(15,39,63,87)*100000,
+                                                  sum(data[c(5,6,7,8),4])+c(15,39,63,87)*100000,
+                                                  sum(data[c(9,10,11,12),4])+c(15,39,63,87)*100000,
+                                                  sum(data[c(13,14,15,16),4])+c(15,39,63,87)*100000,
+                                                  sum(data[c(17,18,19,20),4])+c(15,39,63,87)*100000),
+              color=rep(c("firebrick4","olivedrab4","blue4", "tomato"),5), fontface="bold", label = paste(round(percent2,1),"%",sep = " "))
+
+
+```
+
+
+Τhe development of our algorithm is mainly concerned with all the above regarding the best possible management of the available information. In ideal conditions from the point of view of computational capabilities, these observations would be of purely linguistic and sociological interest, and our algorithm would be trained with all the available data. However, this would result in an extremely heavy algorithm and prediction application that could be very accurate if it managed to generate usable/ful prediction (the application must suggest next words in live texting time) given the usual RAM memories (8-16 GB). Once again, here it is the need for a trade-off between speed and accuracy.
+
+Τhis trade-off will be based on the selection of only the n-grams ωχωσες instances/occurrences are above a  certain threshold. And in our case, as can be seen from the following figures, this threshold will be the "minimum 4 instances".
+
+\
+
+<center> <h4>N-grams to be Used for the Prediction Algorithm</center>
+
+```{r fig5_6, echo=FALSE, fig.show = "hold", out.width = "50%", fig.height= 7}
+
+all_graphs_freq_1 <- geom_line(data=all_50K_1_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_1_grams.dt)-1)), y=cum.z, colour="tomato", linetype="solid"), size=2)
+all_graphs_freq_2 <- geom_line(data=all_50K_2_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_2_grams.dt)-1)), y=cum.z, colour="tomato", linetype="longdash"), size=2)
+all_graphs_freq_3 <- geom_line(data=all_50K_3_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_3_grams.dt)-1)), y=cum.z, colour="tomato", linetype="twodash"), size=2)
+all_graphs_freq_4 <- geom_line(data=all_50K_4_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_4_grams.dt)-1)), y=cum.z, colour="tomato", linetype="dotdash"), size=2)
+all_graphs_freq_5 <- geom_line(data=all_50K_5_grams.dt, aes(x=seq(0, 100, by = 100/(nrow(all_50K_5_grams.dt)-1)), y=cum.z, colour="tomato", linetype="dashed"), size=2)
+
+
+(graphs_used <- 
+    ggplot() + 
+    all_graphs_freq_1 + all_graphs_freq_2 + all_graphs_freq_3 + all_graphs_freq_4 + all_graphs_freq_5 +
+    used_graphs_freq_1 + used_graphs_freq_2 + used_graphs_freq_3 + used_graphs_freq_4 + used_graphs_freq_5 +
+    labs(y= "Cumulative Relative Frequency of Occurrence (%)", x = "\nUnique N-grams Frequency Percentile\n\n") +
+    scale_x_continuous(breaks=seq(0, 100, 10)) +
+    scale_y_continuous(breaks=seq(0, 100, 10)) +
+    ggtitle("\nper Text Corpus") +
+    theme(plot.title = element_text(hjust = 0.5, size = 17, colour = "grey16", family = "Arial"),
+          legend.key.size = unit(0.45,"cm"),
+          legend.key.width = unit(2,"cm"),
+          axis.text=element_text(colour = "black"),
+          text = element_text(family = "Serif"),
+          legend.position = c(0.79, 0.31)) +
+    scale_linetype_identity(name = "N-grams",
+                            breaks = c("solid", "longdash", "twodash", "dotdash", "dashed"),
+                            labels = c("1-grams", "2-grams", "3-grams", "4-grams", "5-grams"),
+                            guide = guide_legend(reverse=TRUE)) +
+    scale_color_identity(name = "",
+                         breaks = c("tomato", "steelblue"),
+                         labels = c("All N-grams", "N-grams Used \nfor the \nPrediction Algorithm"),
+                         guide = guide_legend(reverse=TRUE)))
+
+N_grams <- c(rep("1-grams" , 2) , rep("2-grams" , 2) , rep("3-grams" , 2) , rep("4-grams" , 2), rep("5-grams" , 2) )
+Used_Not_Used <- rep(c("Not-Used" , "Used") , 5)
+
+s<-c(nrows_olo_1_grams <- round(as.numeric(nrow(all_Above3x_1_grams.dt))*as.numeric(nrow(all_50K_1_grams.dt)/nrow(min4_50K_1_grams.dt))),
+     nrows_4min_1_grams <- as.numeric(nrow(all_Above3x_1_grams.dt)),
+     nrows_olo_2_grams <- round(as.numeric(nrow(all_Above3x_2_grams.dt))*as.numeric(nrow(all_50K_2_grams.dt)/nrow(min4_50K_2_grams.dt))),
+     nrows_4min_2_grams <- as.numeric(nrow(all_Above3x_2_grams.dt)),
+     nrows_olo_3_grams <- round(as.numeric(nrow(all_Above3x_3_grams.dt))*as.numeric(nrow(all_50K_3_grams.dt)/nrow(min4_50K_3_grams.dt))),
+     nrows_4min_3_grams <- as.numeric(nrow(all_Above3x_3_grams.dt)),
+     nrows_olo_4_grams <- round(as.numeric(nrow(all_Above3x_4_grams.dt))*as.numeric(nrow(all_50K_4_grams.dt)/nrow(min4_50K_4_grams.dt))),
+     nrows_4min_4_grams <- as.numeric(nrow(all_Above3x_4_grams.dt)),
+     nrows_olo_5_grams <- round(as.numeric(nrow(all_Above3x_5_grams.dt))*as.numeric(nrow(all_50K_5_grams.dt)/nrow(min4_50K_5_grams.dt))),
+     nrows_4min_5_grams <- as.numeric(nrow(all_Above3x_5_grams.dt)))
+
+value <- c(nrows_olo_1_grams-nrows_4min_1_grams, nrows_4min_1_grams,
+           nrows_olo_2_grams-nrows_4min_2_grams, nrows_4min_2_grams,
+           nrows_olo_3_grams-nrows_4min_3_grams, nrows_4min_3_grams,
+           nrows_olo_4_grams-nrows_4min_4_grams, nrows_4min_4_grams,
+           nrows_olo_5_grams-nrows_4min_5_grams, nrows_4min_5_grams)
+
+percent <- 100*c(value[2]/(value[1]+value[2]), value[1]/(value[1]+value[2]),
+                 value[4]/(value[3]+value[4]), value[3]/(value[3]+value[4]),
+                 value[6]/(value[5]+value[6]), value[5]/(value[5]+value[6]),
+                 value[8]/(value[7]+value[8]), value[7]/(value[7]+value[8]),
+                 value[10]/(value[9]+value[10]), value[9]/(value[9]+value[10]))
+
+data <- data.frame(N_grams,Used_Not_Used,value, percent)
+
+# Stacked
+ggplot(data, aes(fill=Used_Not_Used, y=value, x=N_grams)) + 
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual(values = c("tomato","steelblue"))+
+  labs(y= "Relative and Absolute Unique N-grams", x = "") +
+  theme(plot.title = element_text(hjust = 0.5, size=17, colour = "grey16", family = "Arial"),
+        axis.text=element_text(colour = "black"),
+        text = element_text(family = "Serif"),
+        legend.position = c(0.31, 0.81)) +
+  ggtitle("per N") +
+  guides(fill=guide_legend(title="Data for the \nPrediction Algorithm")) +
+  annotate("text", x = rep(1:5, each=2), y = c(sum(data[c(1,2),3])+c(12,30)*100000, 
+                                               sum(data[c(3,4),3])+c(12,30)*100000,
+                                               sum(data[c(5,6),3])+c(12,30)*100000,
+                                               sum(data[c(7,8),3])+c(12,30)*100000,
+                                               sum(data[c(9,10),3])+c(12,30)*100000),
+           color=rep(c("blue4", "tomato"),5), fontface="bold", label = paste(round(percent,1),"%",sep = " ")) +
+  scale_y_continuous(labels = scales::unit_format(unit = "M",
+                                                  scale = 1e-6), breaks = seq(0, 120000000, 10000000))
+```
+
+## Next Steps For the Prediction Algorithm And Shiny App
+
+We will thus build a 5-gram probabilistic language model assigning probabilities to sequences of words and estimating the probability of the last word of our 5-gram given the previous 4 words.
+
+The different n-grams (5-grams, 4-grams, 3-grams, 2-grams and 1-grams) we will use to "train" our model (allocate probabilities) will only be composed of those encountered at least 4 times in all our corpora.
+
+We will then use Stupid Backoff to rank next-word candidates, that is to say in the event of complicity during an assignment of a prediction — either non-existing 5-gram to fit or same probability for two 5-grams — the predictions will be based on the available 4-grams (given only on the previous 3 words), and so on, until, when necessary, our model simply returns the most popular 1-grams (single words), practically regardless of the previous word.
+
+Finally, in the case of profanity, the corresponding predictions will be ignored, or else, the model will suggest the next most likely option.

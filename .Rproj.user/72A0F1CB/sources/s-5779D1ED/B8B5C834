@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1592840106726.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "B8B5C834",
+    "lastKnownWriteTime" : 1588183072,
+    "last_content_update" : 1588183072,
+    "path" : "~/Courses/Coursera_R/10_Capstone/NLP_Next-Word_Prediction_Language_Model/data_manipulation_2.R",
+    "project_path" : "data_manipulation_2.R",
+    "properties" : {
+        "cursorPosition" : "33,5",
+        "scrollLine" : "14"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
